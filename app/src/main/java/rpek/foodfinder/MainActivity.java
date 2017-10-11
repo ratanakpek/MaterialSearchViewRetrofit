@@ -24,20 +24,21 @@ import rpek.foodfinder.data.FoodAPI;
 import rpek.foodfinder.model.Food;
 import rpek.foodfinder.service.ServiceGenerator;
 
-import static android.R.attr.data;
-
 public class MainActivity extends AppCompatActivity {
 
 
     private MaterialSearchView searchView;
     String[] keywordSearch;
-    boolean alreadySearch;
+    boolean firstTimeSearch=true;
+    String keySearchHistory;
 
 
     //item layout
     RecyclerView rcvFoodItem;
     FoodAdapter foodAdapter;
-    List<Food.Recipes> mFood;
+    List<Food.Recipes> mFoodListDefault;
+    List<Food.Recipes> mFoodAfterSearch=new ArrayList<>();
+
 
 
     @Override
@@ -55,8 +56,6 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-
-
                 showSearchResult();
                 return false;
             }
@@ -64,11 +63,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextChange(String newText) {
                 //Do some magic
-              /*  if(alreadySearch) {
-
-                }*/
-                letSearch(newText);
-                alreadySearch = true;
+                if(firstTimeSearch) {
+                    letSearch(newText);
+                    firstTimeSearch=false;
+                }
+                keySearchHistory=newText;
                 return false;
             }
         });
@@ -77,8 +76,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Toast.makeText(MainActivity.this, "On Item Click", Toast.LENGTH_SHORT).show();
-                if(mFood!=null)
-                    showSearchResult(mFood);
+                if(mFoodListDefault!=null)
+                    showSearchResult(mFoodListDefault);
             }
         });*/
         /*searchView.setOnClickListener(new View.OnClickListener() {
@@ -110,19 +109,12 @@ public class MainActivity extends AppCompatActivity {
                     if(foodApi.getRecipes()!=null){
                         if (foodApi.getRecipes().size() > 0) {
                             if (foodApi != null) {
+                                mFoodListDefault =foodApi.getRecipes();
                                 keywordSearch = new String[foodApi.getRecipes().size()];
                                 for (int i = 0; i < foodApi.getRecipes().size(); i++) {
                                     keywordSearch[i] = foodApi.getRecipes().get(i).getTitle();
-
-                                    if (foodApi.getRecipes().get(i).getTitle().toLowerCase().startsWith(search.toString().toLowerCase())) {
-                                        mFood = new ArrayList<Food.Recipes>();
-                                        mFood.add(foodApi.getRecipes().get(i));
-                                    }
-
                                 }
                                 searchView.setSuggestions(keywordSearch);
-
-
                             }
                         }
                     }
@@ -160,12 +152,28 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
         rcvFoodItem.setLayoutManager(mLayoutManager);
         rcvFoodItem.setItemAnimator(new DefaultItemAnimator());
+        foodAdapter = new FoodAdapter(this, mFoodAfterSearch);
     }
 
     private void showSearchResult() {
-        if (mFood != null) {
-            foodAdapter = new FoodAdapter(this, mFood);
+        List<Food.Recipes> footList=searchKeyWordBy(keySearchHistory);
+        if(footList!=null){
             rcvFoodItem.setAdapter(foodAdapter);
+            foodAdapter.notifyDataSetChanged();
         }
+    }
+
+    private List<Food.Recipes> searchKeyWordBy(String searchKey){
+        // clear history search
+        mFoodAfterSearch.clear();
+        if(mFoodListDefault !=null){
+            for(Food.Recipes item:mFoodListDefault){
+                //string.toLowerCase().startsWith(constraint.toString().toLowerCase())
+                if(item.getTitle().toString().toLowerCase().startsWith(searchKey.toLowerCase())){
+                    mFoodAfterSearch.add(item);
+                }
+            }
+        }
+        return mFoodAfterSearch;
     }
 }
